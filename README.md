@@ -1,4 +1,4 @@
-# Bonepile — Multiplayer Dominoes
+# dominos — Multiplayer Dominoes
 
 A cozy multiplayer dominoes room — classic green-felt-and-wood aesthetic.
 Built with Next.js (App Router), Tailwind CSS, and Socket.io for real-time play.

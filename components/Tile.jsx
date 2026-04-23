@@ -10,8 +10,11 @@ const PIP_POS = {
   6: [[0.28, 0.25], [0.72, 0.25], [0.28, 0.5], [0.72, 0.5], [0.28, 0.75], [0.72, 0.75]],
 };
 
-function Pips({ n, color = '#1a1410' }) {
-  const pos = PIP_POS[n] || [];
+function Pips({ n, color = '#1a1410', orient = 'h' }) {
+  let pos = PIP_POS[n] || [];
+  if(n === 6 && orient === 'h') {
+    pos = [[0.24, 0.25], [0.48, 0.25], [0.72, 0.25], [0.24, 0.75], [0.48, 0.75], [0.72, 0.75]];
+  }
   return (
     <g>
       {pos.map(([x, y], i) => (
@@ -86,8 +89,8 @@ export default function Tile({
             ) : (
               <line x1="12" y1="100" x2="88" y2="100" stroke="#1a1410" strokeWidth="2" strokeLinecap="round" />
             )}
-            <g transform="translate(0,0)"><Pips n={a} /></g>
-            <g transform={orient === 'h' ? 'translate(100,0)' : 'translate(0,100)'}><Pips n={b} /></g>
+            <g transform="translate(0,0)"><Pips n={a} orient={orient} /></g>
+            <g transform={orient === 'h' ? 'translate(100,0)' : 'translate(0,100)'}><Pips n={b} orient={orient} /></g>
           </>
         )}
 

@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Bonepile — Multiplayer Dominoes',
+  title: 'dominos — Multiplayer Dominoes',
   description: 'Multiplayer dominoes, the long way ’round.',
 };
 

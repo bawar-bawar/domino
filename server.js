@@ -20,6 +20,6 @@ app.prepare().then(() => {
   });
   registerGameHandlers(io);
   server.listen(port, () => {
-    console.log(`> Bonepile ready on http://localhost:${port}`);
+    console.log(`> dominos ready on http://localhost:${port}`);
   });
 });

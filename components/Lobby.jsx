@@ -65,7 +65,7 @@ export default function Lobby({ socket, room, onStart, onCreateRoom, onJoinRoom,
           <div className="flex items-center gap-3.5 mb-7">
             <LogoMark />
             <div>
-              <div className="font-display font-black text-[32px] text-cream leading-none -tracking-[0.5px]">Bonepile</div>
+              <div className="font-display font-black text-[32px] text-cream leading-none -tracking-[0.5px]">dominos</div>
               <div className="text-[13px] text-cream/60 mt-0.5 italic">Multiplayer dominoes, the long way ’round.</div>
             </div>
             <div className="ml-auto flex gap-2.5 items-center">
@@ -150,6 +150,7 @@ export default function Lobby({ socket, room, onStart, onCreateRoom, onJoinRoom,
 
           {mode === 'create' && (
             <CreatePanel
+              socket={socket}
               name={name} setName={setName}
               avatar={avatar} setAvatar={setAvatar}
               seats={seats} setSeats={setSeats}
@@ -372,6 +373,7 @@ function JoinPanel({ onBack, onJoin, error, name }) {
 }
 
 function CreatePanel({
+  socket,
   name, setName, avatar, setAvatar,
   seats, setSeats, points, setPoints,
   onBack, onCreate, room, allReady, isHost, onStart,
@@ -379,8 +381,35 @@ function CreatePanel({
   const code = room?.code || '????';
   const members = room?.members || [];
   const hasRoom = !!room;
+  const started = !!room?.started;
   const effSeats = room?.seats ?? seats;
   const effPoints = room?.points ?? points;
+  const canEditSettings = !hasRoom || (isHost && !started);
+  const canEditProfile = !started;
+
+  // Debounced name emit while in a room
+  useEffect(() => {
+    if (!hasRoom || !socket) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const t = setTimeout(() => {
+      socket.emit('updateProfile', { name: trimmed });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [name, hasRoom, socket]);
+
+  function pickAvatar(a) {
+    setAvatar(a);
+    if (hasRoom && socket) socket.emit('updateProfile', { avatar: a });
+  }
+  function pickSeats(n) {
+    setSeats(n);
+    if (hasRoom && socket) socket.emit('updateSettings', { seats: n });
+  }
+  function pickPoints(p) {
+    setPoints(p);
+    if (hasRoom && socket) socket.emit('updateSettings', { points: p });
+  }
 
   return (
     <Panel>
@@ -428,15 +457,15 @@ function CreatePanel({
               {[50, 100, 150, 250].map((p) => (
                 <button
                   key={p}
-                  disabled={hasRoom && !isHost}
-                  onClick={() => setPoints(p)}
+                  disabled={!canEditSettings}
+                  onClick={() => pickPoints(p)}
                   className="font-bold rounded-[10px]"
                   style={{
                     padding: '10px 14px',
                     background: effPoints === p ? '#e8b86b' : '#2a1a0a',
                     color: effPoints === p ? '#2a1a0a' : '#f5ead2',
                     border: effPoints === p ? '2px solid #7a4a24' : '1px solid #c88a4c55',
-                    opacity: hasRoom && !isHost ? 0.6 : 1,
+                    opacity: canEditSettings ? 1 : 0.6,
                   }}
                 >{p} pts</button>
               ))}
@@ -445,21 +474,27 @@ function CreatePanel({
             <div className="h-4" />
             <Label>Seats</Label>
             <div className="flex gap-2 mt-2.5">
-              {[2, 3, 4].map((n) => (
-                <button
-                  key={n}
-                  disabled={hasRoom}
-                  onClick={() => setSeats(n)}
-                  className="font-bold rounded-[10px]"
-                  style={{
-                    padding: '10px 16px',
-                    background: effSeats === n ? '#e8b86b' : '#2a1a0a',
-                    color: effSeats === n ? '#2a1a0a' : '#f5ead2',
-                    border: effSeats === n ? '2px solid #7a4a24' : '1px solid #c88a4c55',
-                    opacity: hasRoom ? 0.7 : 1,
-                  }}
-                >{n} players</button>
-              ))}
+              {[2, 3, 4].map((n) => {
+                const tooFew = hasRoom && n < members.length;
+                const disabled = !canEditSettings || tooFew;
+                return (
+                  <button
+                    key={n}
+                    disabled={disabled}
+                    title={tooFew ? 'Too many players seated' : undefined}
+                    onClick={() => pickSeats(n)}
+                    className="font-bold rounded-[10px]"
+                    style={{
+                      padding: '10px 16px',
+                      background: effSeats === n ? '#e8b86b' : '#2a1a0a',
+                      color: effSeats === n ? '#2a1a0a' : '#f5ead2',
+                      border: effSeats === n ? '2px solid #7a4a24' : '1px solid #c88a4c55',
+                      opacity: disabled ? 0.5 : 1,
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                    }}
+                  >{n} players</button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -471,12 +506,13 @@ function CreatePanel({
             <input
               value={name}
               onChange={(e) => setName(e.target.value.slice(0, 16))}
-              disabled={hasRoom}
+              disabled={!canEditProfile}
               className="flex-1"
               style={{
                 background: '#0a0503', color: '#f5ead2',
                 border: '1px solid #c88a4c55', borderRadius: 10,
                 padding: '12px 14px', fontSize: 16,
+                opacity: canEditProfile ? 1 : 0.6,
               }}
             />
           </div>
@@ -484,13 +520,14 @@ function CreatePanel({
             {AVATARS.map((a) => (
               <button
                 key={a}
-                disabled={hasRoom}
-                onClick={() => setAvatar(a)}
+                disabled={!canEditProfile}
+                onClick={() => pickAvatar(a)}
                 style={{
                   width: 42, height: 42, borderRadius: 10, fontSize: 22,
                   background: avatar === a ? '#e8b86b' : '#2a1a0a',
                   border: avatar === a ? '2px solid #7a4a24' : '1px solid #c88a4c55',
-                  opacity: hasRoom ? 0.6 : 1,
+                  opacity: canEditProfile ? 1 : 0.6,
+                  cursor: canEditProfile ? 'pointer' : 'not-allowed',
                 }}
               >{a}</button>
             ))}

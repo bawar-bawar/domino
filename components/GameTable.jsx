@@ -120,6 +120,7 @@ export default function GameTable({
         mustPass={mustPass}
         you={players[you]}
         showChat={showChat}
+        orient={'v'}
       />
 
       {showChat && (
@@ -333,13 +334,13 @@ function BoardChain({ chain, zoom }) {
       ) : (
         <div
           ref={containerRef}
-          className="flex gap-0.5"
-          style={{ transform: `scale(${scale * zoom})`, transition: 'transform .3s' }}
+          className="flex gap-0.5 mt-20"
+          style={{ transform: `scale(${scale * zoom * 0.7})`, transition: 'transform .3s' }}
         >
           {chain.map((t, i) => {
             const isDouble = t.left === t.right;
             return (
-              <div key={t.id || i} className={i === chain.length - 1 ? 'animate-tile-plop' : ''}>
+              <div key={t.id || i} className={`static-class ${i === chain.length - 1 ? 'animate-tile-plop' : ''} ${isDouble ? '' : 'flex flex-col justify-center'}`}>
                 <Tile a={t.left} b={t.right} orient={isDouble ? 'v' : 'h'} size={44} />
               </div>
             );
@@ -467,6 +468,7 @@ function YourHand({ hand, chain, selectedId, myTurn, onTile, onDraw, onPass, mus
               dim={myTurn && !playable}
               onClick={() => onTile(t)}
               title={`${t.a}|${t.b}`}
+              orient={'h'}
             />
           );
         })}
